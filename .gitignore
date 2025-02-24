@@ -1,5 +1,9 @@
 .env
 *.out
 *.o
+
+# Ignore AWS SDK log files
+aws_sdk_*
+
 crypto_arbitrage
 test_price_fetcher
