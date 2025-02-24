@@ -1,0 +1,5 @@
+.env
+*.out
+*.o
+crypto_arbitrage
+test_price_fetcher
