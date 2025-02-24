@@ -17,7 +17,7 @@ void testFetchPrice() {
 void testHandleInvalidToken() {
     PriceFetcher fetcher;
     std::string token1 = "0xINVALIDTOKEN";
-    std::string token2 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // ETH
+    std::string token2 = "ETH"; // ETH
 
     double price = fetcher.get_swap_quote(token1, token2);
     assert(price == -1);  // Expect failure handling
