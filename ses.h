@@ -15,7 +15,7 @@ public:
     SESEmailer(); 
     ~SESEmailer();
     
-    void sendEmail(const std::string& to, const std::string& subject, const std::string& body);
+    virtual void sendEmail(const std::string& to, const std::string& subject, const std::string& body); 
 };
 
 #endif
