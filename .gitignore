@@ -10,3 +10,6 @@ crypto_arbitrage
 test_price_fetcher
 test_arb_detector
 test_ses
+
+# Ignore my log files
+arbitrage_log.txt

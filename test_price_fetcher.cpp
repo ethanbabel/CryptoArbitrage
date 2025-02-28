@@ -2,8 +2,10 @@
 #include <cassert>
 #include "price_fetcher.h"
 
-void testFetchPrice() {
+
+void testFetchPrice(std::string apiKey) {
     PriceFetcher fetcher;
+    fetcher.setApiKey(apiKey);
     std::string token1 = "USDT";
     std::string token2 = "ETH"; 
 
@@ -14,8 +16,9 @@ void testFetchPrice() {
     std::cout << "✅ testFetchPrice PASSED, USDT<-->ETH = " << std::to_string(price) << std::endl;
 }
 
-void testHandleInvalidToken() {
+void testHandleInvalidToken(std::string apiKey) {
     PriceFetcher fetcher;
+    fetcher.setApiKey(apiKey);
     std::string token1 = "0xINVALIDTOKEN";
     std::string token2 = "ETH"; // ETH
 
@@ -26,8 +29,16 @@ void testHandleInvalidToken() {
 }
 
 int main() {
-    testFetchPrice();
-    testHandleInvalidToken();
+    const char* apiKeyEnv = std::getenv("API_KEY");
+    if (!apiKeyEnv) {
+        std::cerr << "❌ ERROR: API_KEY environment variable not set. Exiting." << std::endl;
+        return 1;
+    }
+
+    std::string apiKey = apiKeyEnv;
+
+    testFetchPrice(apiKey);
+    testHandleInvalidToken(apiKey);
     std::cout << "🎉 ALL TESTS PASSED!\n";
     return 0;
 }

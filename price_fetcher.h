@@ -18,23 +18,20 @@ using namespace std;
 
 class PriceFetcher {
 private:
-    const string API_KEY;  // Replace with actual API key
+    string API_KEY;  // API Key is now set after construction
     const string BASE_URL = "https://rest.cryptoapis.io/v2/market-data/exchange-rates/by-symbol/";
     mutex price_mutex;
     unordered_map<string, double> prices;
+    vector<pair<string, string>> tokenPairs;  // Store assigned token pairs
 
 public:
-    PriceFetcher() : API_KEY(std::getenv("API_KEY")) {
-        if (API_KEY.empty()) {
-            cerr << "API_KEY environment variable not set." << endl;
-            exit(1);
-        }
-    }
-    void update_prices(const vector<pair<string, string>>& token_pairs);
-    void print_prices();
-    unordered_map<string, double> get_prices();
+    PriceFetcher() = default;  
+
+    void setApiKey(const string& apiKey);
+    void addPair(const string& base, const string& quote);
+    vector<tuple<string, string, double>> fetchPrices();
 
     double get_swap_quote(const string& base_symbol, const string& quote_symbol);
 };
 
-#endif
+#endif  // PRICE_FETCHER_H

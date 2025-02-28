@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include <limits>
 #include <vector>
+#include <fstream>  // For file handling
+#include <ctime>    // For timestamping
 
 ArbDetector::ArbDetector() {
     // The constructor initializes an empty graph.
@@ -78,20 +80,85 @@ std::vector<std::string> ArbDetector::bellmanFord(const std::string& start) {
     return {}; // No arbitrage cycle found
 }
 
-// Function to detect arbitrage and send an email if an opportunity exists
-void ArbDetector::detectArbitrage() {
-    for (const auto& token : tokens) {
-        std::vector<std::string> cycle = bellmanFord(token);
-        
-        if (!cycle.empty()) {
-            std::string message = "Arbitrage Opportunity Detected:\n";
-            for (const auto& node : cycle) {
-                message += node + " -> ";
+// Function to calculate the profit percentage of an arbitrage cycle
+double ArbDetector::calculateArbitrageProfit(const std::vector<std::string>& cycle) {
+    if (cycle.empty()) return 0.0; // No arbitrage cycle found
+
+    double product = 1.0;
+
+    // Multiply all exchange rates along the cycle
+    for (size_t i = 0; i < cycle.size() - 1; ++i) {
+        std::string from = cycle[i];
+        std::string to = cycle[i + 1];
+
+        // Find the edge corresponding to this transition
+        auto it = graph.find(from);
+        if (it != graph.end()) {
+            for (const auto& edge : it->second) {
+                if (edge.to == to) {
+                    product *= std::exp(-edge.weight);  // Reverse log transform
+                    break;
+                }
             }
-            message += cycle.front(); // Complete the cycle
-            std::cout << message << std::endl;
-            emailer.sendEmail("Arbitrage Alert", message, "babelethan@gmail.com");
-            // return;  // Stop checking after finding the first arbitrage opportunity
         }
     }
+
+    // Final transition back to start
+    std::string last = cycle.back();
+    std::string first = cycle.front();
+    auto it = graph.find(last);
+    if (it != graph.end()) {
+        for (const auto& edge : it->second) {
+            if (edge.to == first) {
+                product *= std::exp(-edge.weight);
+                break;
+            }
+        }
+    }
+
+    // Calculate profit percentage
+    double profit = (product - 1.0) * 100.0;
+    return profit;
+}
+
+// Function to detect arbitrage, send an email, and log it
+void ArbDetector::detectArbitrage() {
+    std::ofstream logFile("arbitrage_log.txt", std::ios::app);  // Open in append mode
+
+    if (!logFile) {
+        std::cerr << "⚠️ ERROR: Could not open arbitrage_log.txt for writing!" << std::endl;
+        return;
+    }
+
+    for (const auto& token : tokens) {
+        std::vector<std::string> cycle = bellmanFord(token);
+
+        if (!cycle.empty()) {
+            double profit = calculateArbitrageProfit(cycle);
+
+            // Only log & send emails if the arbitrage is profitable
+            if (profit > 0.0) {
+                // Construct the arbitrage message
+                std::string message = "💰 Arbitrage Opportunity Detected:\n";
+                for (const auto& node : cycle) {
+                    message += node + " -> ";
+                }
+                message += cycle.front();  // Complete the cycle
+
+                message += "\n📈 Expected Profit: " + std::to_string(profit) + "%";
+
+                // Print to console
+                std::cout << message << std::endl;
+
+                // Send an email notification
+                emailer.sendEmail("Arbitrage Alert", message, "babelethan@gmail.com");
+
+                // Log to file with timestamp
+                std::time_t now = std::time(nullptr);
+                logFile << "[" << std::ctime(&now) << "] " << message << "\n\n";
+            }
+        }
+    }
+
+    logFile.close();  // Ensure the log file is properly closed
 }

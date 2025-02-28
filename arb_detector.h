@@ -52,6 +52,9 @@ private:
     // Helper function to log-transform prices
     double logTransform(double price);
 
+    // Helper function to calculate arbitrage profit
+    double calculateArbitrageProfit(const std::vector<std::string>& cycle);
+
     // Helper function to execute Bellman-Ford
     std::vector<std::string> bellmanFord(const std::string& start);
 };

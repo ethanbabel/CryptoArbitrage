@@ -11,7 +11,7 @@ TEST_SES_EXEC = test_ses
 TEST_ARB_EXEC = test_arb_detector
 
 # Source files
-MAIN_SRCS = main.cpp price_fetcher.cpp ses.cpp arb_detector.cpp
+MAIN_SRCS = main.cpp driver.cpp price_fetcher.cpp ses.cpp arb_detector.cpp
 TEST_PRICE_SRCS = test_price_fetcher.cpp price_fetcher.cpp
 TEST_SES_SRCS = test_ses.cpp ses.cpp
 TEST_ARB_SRCS = test_arb_detector.cpp arb_detector.cpp ses.cpp
@@ -36,7 +36,7 @@ GTEST_LIBS = -lgtest -lgtest_main -pthread
 # Default target (build all executables)
 all: $(MAIN_EXEC) $(TEST_PRICE_EXEC) $(TEST_SES_EXEC) $(TEST_ARB_EXEC)
 
-# Compile main program
+# Compile main program with Driver
 $(MAIN_EXEC): $(MAIN_OBJS)
 	$(CC) $(CFLAGS) -o $@ $(MAIN_OBJS) $(LIBS)
 
