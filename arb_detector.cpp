@@ -18,8 +18,20 @@ double ArbDetector::logTransform(double price) {
 // Function to update the master graph with new swap quote data
 void ArbDetector::updateGraph(const std::string& from, const std::string& to, double price) {
     double weight = logTransform(price);
+
+    bool edgeExists = false;
+    for (auto& edge : graph[from]) {
+        if (edge.to == to) {
+            edgeExists = true;
+            edge.weight = weight;  // Update the existing edge
+            break;
+        }
+    }
+    if (!edgeExists) {
+        numEdges++;
+        graph[from].push_back({from, to, weight});
+    }
     
-    graph[from].push_back({from, to, weight});
     
     // Ensure tokens are stored for Bellman-Ford iteration
     if (std::find(tokens.begin(), tokens.end(), from) == tokens.end()) {

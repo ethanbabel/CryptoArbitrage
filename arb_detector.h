@@ -42,9 +42,22 @@ public:
         emailer = newEmailer;
     }
 
+    int getNumTokens() {
+        return tokens.size();
+    }
+
+    int getGraphNumEdges() {
+        int numEdges = 0;
+        for (const auto& [token, edges] : graph) {
+            numEdges += edges.size();
+        }
+        return numEdges;
+    }
+
 private:
 
     std::unordered_map<std::string, std::vector<Edge>> graph;
+    int numEdges = 0;
     std::vector<std::string> tokens;
 
     SESEmailer emailer;

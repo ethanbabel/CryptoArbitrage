@@ -10,6 +10,7 @@
 #include <mutex>
 #include <atomic>
 
+
 // Custom hash function for pair keys
 struct PairHash {
     template <typename T, typename U>
@@ -28,15 +29,15 @@ private:
     void fetchAllTokens();
     void distributeTokenPairs();
     void runPriceFetchers();
-    void priceFetcherThread(std::unique_ptr<PriceFetcher>& fetcher);
+    void priceFetcherThread();
     void runArbDetector();
 
     std::string apiKey;
     std::vector<std::pair<std::string, std::string>> tokenPairs;
-    std::vector<std::unique_ptr<PriceFetcher>> priceFetchers; 
+    PriceFetcher priceFetcher; 
     ArbDetector arbDetector;
 
-    std::vector<std::thread> fetcherThreads;
+    std::thread fetcherThread;
     std::thread arbDetectorThread;
 
     std::mutex queueMutex;

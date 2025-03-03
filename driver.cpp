@@ -3,18 +3,21 @@
 #include <chrono>
 #include <thread>
 
-// Constructor initializes API key and prepares token pairs
+// DRIVER IMPLEMENTATION
+
+// Constructor initializes API key, prepares token pairs
 Driver::Driver(const std::string& apiKey) : apiKey(apiKey), running(true) {
     fetchAllTokens();
     distributeTokenPairs();
+    priceFetcher.setApiKey(apiKey);
 }
 
 // Destructor ensures threads are joined
 Driver::~Driver() {
     running = false;
 
-    for (auto& t : fetcherThreads) {
-        if (t.joinable()) t.join();
+   if (fetcherThread.joinable()) {
+        fetcherThread.join();
     }
 
     if (arbDetectorThread.joinable()) {
@@ -23,63 +26,60 @@ Driver::~Driver() {
     std::cerr << "Driver shutdown complete." << std::endl << std::flush;
 }
 
-// Fetch all tokens (Placeholder for now)
 void Driver::fetchAllTokens() {
-    std::cout << "Fetching all tokens from Ethereum chain..." << std::endl;
+    std::cout << "Reading available tokens from file..." << std::endl;
     
-    std::vector<std::string> tokens = {"ETH", "USDT", "DAI", "WBTC", "LINK"};
+    std::ifstream file("tokens.txt");
+    if (!file) {
+        std::cerr << "❌ ERROR: Could not open tokens.txt. Make sure it exists!" << std::endl;
+        return;
+    }
 
+    std::string token;
+    std::vector<std::string> tokens;
+
+    while (std::getline(file, token)) {
+        if (!token.empty()) {
+            tokens.push_back(token);
+        }
+    }
+
+    file.close();
+
+    if (tokens.empty()) {
+        std::cerr << "❌ ERROR: No tokens found in tokens.txt." << std::endl;
+        return;
+    }
+
+    // Generate all possible token pairs
     for (size_t i = 0; i < tokens.size(); i++) {
         for (size_t j = i + 1; j < tokens.size(); j++) {
             tokenPairs.emplace_back(tokens[i], tokens[j]);
         }
     }
-    std::cout << "Fetched " << tokenPairs.size() << " token pairs." << std::endl;
+
+    std::cout << "✅ Loaded " << tokens.size() << " tokens and created " << tokenPairs.size() << " token pairs." << std::endl;
 }
 
-// Distribute token pairs among price fetchers
+// Assign token pairs to price fetcher
 void Driver::distributeTokenPairs() {
-    std::cout << "Distributing token pairs among price fetchers..." << std::endl;
-
-    size_t numFetchers = std::thread::hardware_concurrency();
-    std::cout << "Detected " << numFetchers << " CPU cores. " << std::endl;
-    priceFetchers.reserve(numFetchers);
-
-    for (size_t i = 0; i < numFetchers; ++i) {
-        priceFetchers.emplace_back(std::make_unique<PriceFetcher>());
-        priceFetchers.back()->setApiKey(apiKey);  // Set API key
-    }
-    std::cout << "Created " << numFetchers << " price fetchers." << std::endl;
-
-    for (size_t i = 0; i < tokenPairs.size(); i++) {
-        priceFetchers[i % numFetchers]->addPair(tokenPairs[i].first, tokenPairs[i].second);
-    }
-    std::cout << "Distributed " << tokenPairs.size() << " token pairs." << std::endl;
-}
-
-// Runs all price fetchers in multiple threads
-void Driver::runPriceFetchers() {
-    std::cout << "Starting price fetcher threads..." << std::endl;
-
-    for (auto& fetcher : priceFetchers) {
-        fetcherThreads.emplace_back(&Driver::priceFetcherThread, this, std::ref(fetcher));
+    std::cout << "Assigning all token pairs to price fetcher..." << std::endl;
+    for (const auto& pair : tokenPairs) {
+        priceFetcher.addPair(pair.first, pair.second);
     }
 }
 
-// Price fetcher thread function (fetches prices and adds them to queue)
-void Driver::priceFetcherThread(std::unique_ptr<PriceFetcher>& fetcher) {
+
+// Runs Price fetcher thread
+void Driver::priceFetcherThread() {
+    std::cout << "Initializing price fetcher..." << std::endl;
     while (running) {
-        auto newPrices = fetcher->fetchPrices();
-        std::cout << "Fetched " << newPrices.size() << " new prices..." << std::endl;
-        
-        {
+        std::tuple<std::string, std::string, double> newPrice = priceFetcher.fetchNextPrice();
+        if (std::get<2>(newPrice) > 0) {
             std::lock_guard<std::mutex> lock(queueMutex);
-            for (const auto& [tokenA, tokenB, rate] : newPrices) {
-                priceUpdateQueue[{tokenA, tokenB}] = rate; // Only store latest price
-            }
+            priceUpdateQueue[{std::get<0>(newPrice), std::get<1>(newPrice)}] = std::get<2>(newPrice);
         }
-
-        std::this_thread::sleep_for(std::chrono::seconds(1)); // API rate limit handling
+        std::cout << "Price fetched: " << std::get<0>(newPrice) << " → " << std::get<1>(newPrice) << " = " << std::get<2>(newPrice) << std::endl;
     }
 }
 
@@ -97,7 +97,7 @@ void Driver::runArbDetector() {
         }
 
         // Run Bellman-Ford
-        std::cout << "Running arbitrage detector..." << std::endl;
+        std::cout << "Running arbitrage detector with " << arbDetector.getNumTokens() << " total tokens and "<< arbDetector.getGraphNumEdges() << " total edges..." << std::endl;
         arbDetector.detectArbitrage();
 
         std::this_thread::sleep_for(std::chrono::seconds(2)); // Run every 2 seconds (for now, adjust as needed)
@@ -109,7 +109,7 @@ void Driver::start() {
     std::cout << "Starting Driver..." << std::endl;
 
     // Start price fetchers in parallel threads
-    runPriceFetchers();
+    fetcherThread = std::thread(&Driver::priceFetcherThread, this);
 
     // Start arbitrage detector in a separate thread
     arbDetectorThread = std::thread(&Driver::runArbDetector, this);
