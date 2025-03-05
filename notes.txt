@@ -1,0 +1,5 @@
+Use
+
+export $(cat .env | xargs)
+
+to load api key from .env. Run project using makefile. 
