@@ -69,17 +69,38 @@ void Driver::distributeTokenPairs() {
     }
 }
 
-
-// Runs Price fetcher thread
+// Runs Price Fetcher with Moving Window Rate Limiter
 void Driver::priceFetcherThread() {
     std::cout << "Initializing price fetcher..." << std::endl;
+
+    const int batchSize = 27;  // Number of requests per batch
+    const int targetRate = 30; // Target API requests per second
+    const int intervalMs = 1000 / (targetRate / batchSize); // Time per batch
+
     while (running) {
-        std::tuple<std::string, std::string, double> newPrice = priceFetcher.fetchNextPrice();
-        if (std::get<2>(newPrice) > 0) {
+        auto startTime = std::chrono::high_resolution_clock::now();
+
+        // Fetch a batch of prices asynchronously
+        std::vector<std::tuple<std::string, std::string, double>> newPrices = priceFetcher.fetchPricesAsyncBatch(batchSize);
+
+        // Store new prices in the update queue
+        {
             std::lock_guard<std::mutex> lock(queueMutex);
-            priceUpdateQueue[{std::get<0>(newPrice), std::get<1>(newPrice)}] = std::get<2>(newPrice);
+            for (const auto& newPrice : newPrices) {
+                if (std::get<2>(newPrice) > 0) {
+                    priceUpdateQueue[{std::get<0>(newPrice), std::get<1>(newPrice)}] = std::get<2>(newPrice);
+                }
+            }
         }
-        std::cout << "Price fetched: " << std::get<0>(newPrice) << " → " << std::get<1>(newPrice) << " = " << std::get<2>(newPrice) << std::endl;
+
+        // Calculate elapsed time and adjust sleep duration dynamically
+        auto endTime = std::chrono::high_resolution_clock::now();
+        int elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+        int sleepTime = intervalMs - elapsedMs;
+        
+        if (sleepTime > 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime));
+        }
     }
 }
 

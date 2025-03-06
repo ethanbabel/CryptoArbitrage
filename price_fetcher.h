@@ -10,6 +10,7 @@
 #include <chrono>
 #include <cpprest/http_client.h>  // C++ REST SDK (Casablanca)
 #include <cpprest/json.h>
+#include <atomic>
 
 using namespace web;
 using namespace web::http;
@@ -29,10 +30,9 @@ public:
 
     void setApiKey(const string& apiKey);
     void addPair(const string& base, const string& quote);
-    tuple<string, string, double> fetchNextPrice();
 
-
-    double get_swap_quote(const string& base_symbol, const string& quote_symbol);
+    std::vector<std::tuple<std::string, std::string, double>> fetchPricesAsyncBatch(int batchSize);
+    pplx::task<std::tuple<std::string, std::string, double>> get_swap_quote_async(const std::string& base_symbol, const std::string& quote_symbol);
 };
 
 #endif  // PRICE_FETCHER_H
