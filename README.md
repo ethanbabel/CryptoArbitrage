@@ -5,7 +5,7 @@ CryptoArbitrage is a project designed to detect circular arbitrage opportunities
 ## Features
 
 - **Real-time Data Fetching**: Continuously fetches swap quote data for cryptocurrency tokens.
-- **Arbitrage Detection**: Identifies potential arbitrage opportunities by representing the token universe as a log transformed raph, then using Bellman Ford to detect negative weight cycles. Such cycles are then arbitrage opportunities
+- **Arbitrage Detection**: Identifies potential arbitrage opportunities by representing the token universe as a log transformed raph, then using Bellman Ford to detect negative weight cycles. Such cycles are then arbitrage opportunities.
 
 ## Future Additions 
 
