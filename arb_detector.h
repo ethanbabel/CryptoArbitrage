@@ -7,17 +7,13 @@
 #include <string>
 #include <iostream>
 #include "ses.h"
+#include "edge.h"
 
 class ArbDetector {
     friend class ArbDetectorTest;  // Allow test class to access private members
 public:
     ArbDetector();
-
-    struct Edge {
-        std::string from;
-        std::string to;
-        double weight;  // Log-transformed rate for Bellman-Ford
-    };
+    ~ArbDetector();
 
     // Method to update the graph with new swap quote data
     void updateGraph(const std::string& from, const std::string& to, double price);
@@ -52,6 +48,11 @@ public:
             numEdges += edges.size();
         }
         return numEdges;
+    }
+
+    //GETTER for graph analytics
+    std::unordered_map<std::string, std::vector<Edge>> getGraphCopy() const {
+        return graph;
     }
 
 private:

@@ -13,3 +13,6 @@ test_ses
 
 # Ignore my log files
 arbitrage_log.txt
+
+# Ignore external libraries
+external

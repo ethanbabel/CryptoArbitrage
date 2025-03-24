@@ -5,9 +5,14 @@
 #include <vector>
 #include <fstream>  // For file handling
 #include <ctime>    // For timestamping
+#include "graph_analytics.h" 
 
 ArbDetector::ArbDetector() {
-    // The constructor initializes an empty graph.
+
+}
+
+ArbDetector::~ArbDetector() {
+    
 }
 
 // Function to log-transform prices to make Bellman-Ford work with multiplicative arbitrage
